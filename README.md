@@ -1,0 +1,1517 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Planner Moderno</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment-with-locales.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
+    <style>
+        /* Default Dark Theme Styles */
+        body {
+            background-color: #1a202c; /* Dark background */
+            color: #f7fafc; /* Light text */
+            font-family: 'Inter', sans-serif;
+            padding: 30px;
+            text-align: center;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            transition: background-color 0.3s ease, color 0.3s ease; /* Smooth transition */
+        }
+
+        #tema-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            padding: 10px 16px;
+            background-color: #4a5568; /* Dark gray button */
+            color: #f7fafc;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            transition: background-color 0.3s ease;
+            z-index: 10; /* Ensure button is above other elements */
+        }
+
+        #tema-btn:hover {
+            background-color: #718096; /* Lighter dark gray on hover */
+        }
+
+        #exportar-pdf {
+            position: absolute;
+            top: 20px;
+            right: 160px; /* Adjusted position */
+            padding: 10px 16px;
+            background-color: #68d391; /* Green button */
+            color: #1a202c;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            transition: background-color 0.3s ease;
+            z-index: 10; /* Ensure button is above other elements */
+        }
+
+        #exportar-pdf:hover {
+            background-color: #48bb78; /* Darker green on hover */
+        }
+
+        h1, h2, h3 {
+            text-align: center;
+            margin-top: 20px;
+            margin-bottom: 20px;
+            color: #f56565; /* Red title */
+            transition: color 0.3s ease;
+        }
+
+        .relogio-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        #relogio {
+            font-size: 6em;
+            font-weight: bold;
+            color: #f7fafc; /* Light text */
+            margin-top: 10px;
+            transition: color 0.3s ease;
+            text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.5);
+        }
+
+        #data {
+            font-size: 1.5em;
+            color: #cbd5e0; /* Lighter gray text */
+            margin-top: 0;
+            transition: color 0.3s ease;
+        }
+
+        .container {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+        }
+
+        .calendario {
+            width: 100%;
+            max-width: 700px; /* Slightly increased max-width */
+            padding: 25px; /* Increased padding */
+            background-color: #2d3748; /* Darker container */
+            border-radius: 12px;
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
+            transition: background-color 0.3s ease;
+            margin: 0 auto 30px auto; /* Center horizontally and add bottom margin */
+        }
+
+        .calendario-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap; /* Allow wrapping on smaller screens */
+            gap: 10px; /* Add gap between elements */
+        }
+
+        .mes-navegacao {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .mes-navegacao select,
+        .mes-navegacao button {
+            padding: 10px;
+            font-size: 1em;
+            border-radius: 6px;
+            border: 1px solid #718096; /* Darker border */
+            background-color: #4a5568; /* Dark gray dropdown */
+            color: #f7fafc;
+            cursor: pointer;
+            transition: background-color 0.3s ease, border-color 0.3s ease;
+        }
+
+        .mes-navegacao select:hover,
+        .mes-navegacao button:hover {
+            background-color: #718096; /* Lighter dark gray on hover */
+            border-color: #a0aec0; /* Lighter border on hover */
+        }
+
+        .mes-navegacao button {
+            background-color: #63b3ed; /* Blue button */
+            color: #1a202c;
+            font-weight: 600;
+        }
+
+        .mes-navegacao button:hover {
+            background-color: #3182ce; /* Darker blue on hover */
+        }
+
+        .calendario-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 8px;
+        }
+
+        .dias-semana {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        .dias-semana span {
+            padding: 10px 0;
+            font-weight: bold;
+            border-radius: 6px;
+            font-size: 0.9em;
+            color: #a0aec0; /* Light gray for days of week */
+            text-align: center;
+            transition: color 0.3s ease;
+        }
+
+        .dia {
+            aspect-ratio: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background-color: #4a5568; /* Dark gray day */
+            border-radius: 6px;
+            padding: 8px;
+            cursor: pointer;
+            transition: background-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease, border-color 0.3s ease;
+            position: relative;
+            overflow: hidden; /* To contain the animation */
+            border: 1px solid #718096;
+        }
+
+        .dia:hover {
+            background-color: #718096; /* Lighter dark gray on hover */
+            transform: scale(1.05); /* Slight scale on hover */
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+        }
+
+        .dia-numero {
+            font-weight: bold;
+            font-size: 1.1em;
+            color: #f7fafc; /* Light text */
+            margin-bottom: 4px;
+            transition: color 0.2s ease;
+        }
+
+        .dia.outro-mes .dia-numero { /* Target only the number */
+            opacity: 0.6;
+            color: #a0aec0; /* Lighter text for other months */
+        }
+         .dia.outro-mes {
+            border-color: #718096;
+         }
+
+        .dia.hoje {
+            background-color: #f56565; /* Red for today */
+            color: #f7fafc;
+            font-weight: bold;
+            border: 2px solid #ed8936; /* Orange border for today */
+        }
+         .dia.hoje .dia-numero {
+             color: #f7fafc; /* Ensure today's number is light */
+             opacity: 1; /* Ensure full opacity */
+         }
+
+        .marcador-evento {
+            height: 8px;
+            width: 8px;
+            background-color: #68d391; /* Green for event marker */
+            border-radius: 50%;
+            margin-top: 4px;
+            display: inline-block;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(0.8); opacity: 0.7; }
+            50% { transform: scale(1.2); opacity: 1; }
+            100% { transform: scale(0.8); opacity: 0.7; }
+        }
+
+        .modal {
+            display: none; /* Hidden by default */
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6); /* Darker overlay */
+            z-index: 100;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(8px); /* Slightly less blur */
+        }
+
+        .modal-conteudo {
+            background-color: #2d3748; /* Dark modal background */
+            color: #f7fafc; /* Light text */
+            padding: 30px;
+            border-radius: 12px;
+            min-width: 350px;
+            max-width: 500px;
+            position: relative;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            transform: translateY(-20px);
+            opacity: 0;
+            animation: fadeIn 0.3s forwards ease-out, slideIn 0.3s forwards ease-out;
+            transition: background-color 0.3s ease, color 0.3s ease; /* Smooth transition */
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideIn {
+            from { transform: translateY(-20px); }
+            to { transform: translateY(0); }
+        }
+
+        .modal-titulo {
+            margin-top: 0;
+            margin-bottom: 25px;
+            font-size: 1.8em;
+            color: #f56565; /* Red title */
+            text-align: center;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.4);
+            transition: color 0.3s ease;
+        }
+
+        .fechar-modal {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            font-size: 2em;
+            cursor: pointer;
+            color: #a0aec0; /* Light gray close button */
+            transition: color 0.2s ease;
+        }
+
+        .fechar-modal:hover {
+            color: #f7fafc; /* Lighter close button on hover */
+        }
+
+        .form-grupo {
+            margin-bottom: 20px;
+        }
+
+        .form-grupo label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            font-size: 1.1em;
+            color: #cbd5e0; /* Lighter gray label */
+            text-shadow: 0 1px 1px rgba(0, 0, 0, 0.3);
+            transition: color 0.3s ease;
+        }
+
+        .form-grupo input,
+        .form-grupo textarea,
+        .form-grupo select {
+            width: 100%; /* Full width */
+            box-sizing: border-box; /* Include padding and border in element's total width and height */
+            padding: 12px;
+            border-radius: 6px;
+            border: 1px solid #718096; /* Darker border */
+            background-color: #4a5568; /* Dark gray input background */
+            color: #f7fafc; /* Light text */
+            font-family: 'Inter', sans-serif;
+            font-size: 1em;
+            transition: background-color 0.2s ease, border-color 0.2s ease, color 0.3s ease;
+        }
+
+        .form-grupo input:focus,
+        .form-grupo textarea:focus,
+        .form-grupo select:focus {
+            outline: none;
+            border-color: #f56565; /* Red border on focus */
+            box-shadow: 0 0 0 3px rgba(245, 101, 101, 0.3); /* Red glow on focus */
+        }
+
+        .form-grupo textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .form-botoes {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 25px;
+            gap: 15px;
+        }
+
+        .btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.1s ease, box-shadow 0.3s ease;
+            font-size: 1.1em;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+        }
+
+        .btn-salvar {
+            background-color: #68d391; /* Green save button */
+            color: #1a202c; /* Dark text */
+        }
+
+        .btn-salvar:hover {
+            background-color: #48bb78; /* Darker green on hover */
+        }
+
+        .btn-excluir {
+            background-color: #f56565; /* Red delete button */
+            color: #f7fafc; /* Light text */
+        }
+
+        .btn-excluir:hover {
+            background-color: #c53030; /* Darker red on hover */
+        }
+
+        .btn-cancelar {
+            background-color: #a0aec0; /* Light gray cancel button */
+            color: #1a202c; /* Dark text */
+        }
+
+        .btn-cancelar:hover {
+            background-color: #718096; /* Darker gray on hover */
+        }
+
+        .lista-eventos {
+            margin-top: 20px;
+            max-height: 250px;
+            overflow-y: auto;
+            padding-right: 10px; /* Space for scrollbar */
+        }
+
+        /* Custom Scrollbar */
+        .lista-eventos::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .lista-eventos::-webkit-scrollbar-track {
+            background: #4a5568; /* Dark gray track */
+            border-radius: 10px;
+        }
+
+        .lista-eventos::-webkit-scrollbar-thumb {
+            background-color: #718096; /* Lighter gray thumb */
+            border-radius: 10px;
+            border: 2px solid #4a5568; /* Padding around thumb */
+        }
+
+        .lista-eventos::-webkit-scrollbar-thumb:hover {
+            background-color: #a0aec0; /* Even lighter gray on hover */
+        }
+
+        .evento-item {
+            background-color: #4a5568; /* Dark gray item background */
+            margin: 10px 0;
+            padding: 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: background-color 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease, border-color 0.3s ease;
+            border: 1px solid #718096; /* Darker border */
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+            text-align: left; /* Align text to the left */
+        }
+
+        .evento-item:hover {
+            background-color: #718096; /* Lighter gray on hover */
+            transform: translateX(5px);
+            box-shadow: 0 3px 7px rgba(0, 0, 0, 0.3);
+        }
+
+        .evento-titulo {
+            font-weight: bold;
+            color: #f7fafc; /* Light text */
+            margin-bottom: 5px;
+            transition: color 0.3s ease;
+        }
+
+        .evento-horario {
+            font-size: 0.9em;
+            color: #cbd5e0; /* Lighter gray text */
+            transition: color 0.3s ease;
+        }
+
+        /* Light Theme Styles */
+        body.light-mode {
+            background-color: #f7fafc; /* Light background */
+            color: #1a202c; /* Dark text */
+        }
+
+        body.light-mode #tema-btn {
+            background-color: #e2e8f0; /* Light gray button */
+            color: #1a202c; /* Dark text */
+        }
+        body.light-mode #tema-btn:hover {
+            background-color: #cbd5e0; /* Slightly darker gray on hover */
+        }
+
+        body.light-mode #exportar-pdf {
+             background-color: #48bb78; /* Darker green button */
+             color: #f7fafc; /* Light text */
+        }
+        body.light-mode #exportar-pdf:hover {
+             background-color: #38a169; /* Even darker green on hover */
+        }
+
+        body.light-mode h1, body.light-mode h2, body.light-mode h3 {
+            color: #c53030; /* Darker red title */
+        }
+
+        body.light-mode #relogio {
+            color: #2d3748; /* Darker text for clock */
+            text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        body.light-mode #data {
+            color: #4a5568; /* Dark gray text for date */
+        }
+
+        body.light-mode .calendario {
+            background-color: #fff; /* White calendar background */
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1); /* Lighter shadow */
+        }
+
+        body.light-mode .mes-navegacao select,
+        body.light-mode .mes-navegacao button {
+            background-color: #e2e8f0; /* Light gray controls */
+            color: #1a202c; /* Dark text */
+            border-color: #cbd5e0; /* Lighter border */
+        }
+        body.light-mode .mes-navegacao select:hover,
+        body.light-mode .mes-navegacao button:hover {
+            background-color: #cbd5e0; /* Darker gray on hover */
+            border-color: #a0aec0; /* Darker border on hover */
+        }
+        body.light-mode .mes-navegacao button {
+            background-color: #4299e1; /* Lighter blue */
+            color: #fff; /* Light text */
+        }
+         body.light-mode .mes-navegacao button:hover {
+            background-color: #3182ce; /* Darker blue on hover */
+        }
+
+        body.light-mode .dias-semana span {
+            color: #718096; /* Medium gray for days of week */
+        }
+
+        body.light-mode .dia {
+            background-color: #edf2f7; /* Very light gray day */
+            border-color: #e2e8f0; /* Lighter border */
+        }
+        body.light-mode .dia:hover {
+            background-color: #e2e8f0; /* Light gray on hover */
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+        }
+        body.light-mode .dia-numero {
+            color: #2d3748; /* Darker text for day number */
+        }
+        body.light-mode .dia.outro-mes .dia-numero {
+            color: #a0aec0; /* Lighter gray for other month numbers */
+            opacity: 0.7;
+        }
+         body.light-mode .dia.outro-mes {
+            border-color: #e2e8f0;
+         }
+        body.light-mode .dia.hoje {
+            background-color: #fed7d7; /* Light red for today */
+            border-color: #f56565; /* Red border */
+        }
+         body.light-mode .dia.hoje .dia-numero {
+             color: #c53030; /* Dark red number for today */
+             opacity: 1;
+         }
+
+        body.light-mode .modal-conteudo {
+            background-color: #fff; /* White modal background */
+            color: #1a202c; /* Dark text */
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1); /* Lighter shadow */
+        }
+
+        body.light-mode .modal-titulo {
+            color: #c53030; /* Darker red title */
+            text-shadow: none;
+        }
+
+        body.light-mode .fechar-modal {
+            color: #718096; /* Medium gray close button */
+        }
+        body.light-mode .fechar-modal:hover {
+            color: #2d3748; /* Darker gray on hover */
+        }
+
+        body.light-mode .form-grupo label {
+            color: #4a5568; /* Dark gray label */
+            text-shadow: none;
+        }
+
+        body.light-mode .form-grupo input,
+        body.light-mode .form-grupo textarea,
+        body.light-mode .form-grupo select {
+            background-color: #edf2f7; /* Very light gray input background */
+            color: #1a202c; /* Dark text */
+            border-color: #cbd5e0; /* Lighter border */
+        }
+        body.light-mode .form-grupo input:focus,
+        body.light-mode .form-grupo textarea:focus,
+        body.light-mode .form-grupo select:focus {
+            border-color: #f56565; /* Red border on focus */
+            box-shadow: 0 0 0 3px rgba(245, 101, 101, 0.3); /* Red glow on focus */
+            background-color: #fff; /* White background on focus */
+        }
+
+        body.light-mode .btn-salvar {
+            background-color: #48bb78; /* Darker green */
+            color: #fff; /* Light text */
+        }
+        body.light-mode .btn-salvar:hover {
+            background-color: #38a169; /* Even darker green */
+        }
+        body.light-mode .btn-excluir {
+            background-color: #e53e3e; /* Slightly lighter red */
+            color: #fff; /* Light text */
+        }
+        body.light-mode .btn-excluir:hover {
+            background-color: #c53030; /* Darker red */
+        }
+        body.light-mode .btn-cancelar {
+            background-color: #cbd5e0; /* Light gray */
+            color: #1a202c; /* Dark text */
+        }
+        body.light-mode .btn-cancelar:hover {
+            background-color: #a0aec0; /* Darker gray */
+        }
+
+        body.light-mode .lista-eventos::-webkit-scrollbar-track {
+            background: #e2e8f0; /* Light gray track */
+        }
+        body.light-mode .lista-eventos::-webkit-scrollbar-thumb {
+            background-color: #cbd5e0; /* Medium gray thumb */
+            border-color: #e2e8f0;
+        }
+        body.light-mode .lista-eventos::-webkit-scrollbar-thumb:hover {
+            background-color: #a0aec0; /* Darker gray thumb on hover */
+        }
+
+        body.light-mode .evento-item {
+            background-color: #edf2f7; /* Very light gray item */
+            border-color: #e2e8f0; /* Lighter border */
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+        body.light-mode .evento-item:hover {
+            background-color: #e2e8f0; /* Light gray on hover */
+            box-shadow: 0 3px 7px rgba(0, 0, 0, 0.1);
+        }
+        body.light-mode .evento-titulo {
+            color: #2d3748; /* Darker text */
+        }
+        body.light-mode .evento-horario {
+            color: #718096; /* Medium gray text */
+        }
+
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            body {
+                padding: 15px; /* Less padding on smaller screens */
+            }
+            .calendario {
+                padding: 15px;
+            }
+            .calendario-header {
+                flex-direction: column; /* Stack header items vertically */
+                align-items: stretch; /* Stretch items to full width */
+                gap: 15px;
+            }
+            .mes-navegacao {
+                justify-content: space-between; /* Space out nav buttons */
+                width: 100%;
+            }
+             .mes-navegacao select {
+                flex-grow: 1; /* Allow selects to grow */
+             }
+
+            #relogio {
+                font-size: 4em;
+            }
+
+            #data {
+                font-size: 1.2em;
+            }
+
+            .modal-conteudo {
+                min-width: 90%; /* Use more width on small screens */
+                max-width: 95%;
+                padding: 20px;
+            }
+
+            .form-botoes {
+                flex-direction: column; /* Stack buttons vertically */
+                gap: 10px;
+            }
+             .form-botoes .btn {
+                width: 100%; /* Make buttons full width */
+             }
+
+             #exportar-pdf {
+                right: auto; /* Adjust PDF button position */
+                left: 20px;
+                top: 70px; /* Position below theme button */
+             }
+        }
+
+        @media (max-width: 480px) {
+             #relogio {
+                font-size: 3em;
+             }
+             #data {
+                font-size: 1em;
+             }
+             .dia {
+                padding: 4px; /* Smaller padding for days */
+             }
+             .dia-numero {
+                font-size: 0.9em;
+             }
+             .mes-navegacao {
+                gap: 8px;
+             }
+             .mes-navegacao select, .mes-navegacao button {
+                padding: 8px;
+                font-size: 0.9em;
+             }
+             .modal-titulo {
+                font-size: 1.5em;
+             }
+             .form-grupo label {
+                font-size: 1em;
+             }
+             .form-grupo input, .form-grupo textarea, .form-grupo select {
+                padding: 10px;
+                font-size: 0.9em;
+             }
+             .btn {
+                padding: 10px 20px;
+                font-size: 1em;
+             }
+        }
+
+        /* Print Styles (Kept simple for basic calendar layout) */
+        @media print {
+            body, html {
+                background-color: #fff;
+                color: #000;
+            }
+            body * {
+                visibility: hidden; /* Hide everything by default */
+                box-shadow: none !important;
+                text-shadow: none !important;
+                border: none !important;
+            }
+
+            .container, .calendario, .calendario * {
+                visibility: visible; /* Make calendar and its contents visible */
+            }
+
+            .calendario {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                max-width: 100%;
+                padding: 10px;
+                background-color: #fff !important;
+                color: #000 !important;
+                border: 1px solid #ccc !important;
+            }
+             .calendario h2 {
+                 color: #000 !important;
+                 text-align: left;
+             }
+
+            #tema-btn, #exportar-pdf, .relogio-container, .modal {
+                display: none; /* Hide buttons, clock, and modals */
+            }
+
+             .calendario-header {
+                 visibility: hidden; /* Hide navigation in print */
+                 height: 0;
+                 overflow: hidden;
+                 margin: 0;
+                 padding: 0;
+             }
+
+            .dias-semana span {
+                 color: #555 !important;
+                 font-size: 0.8em;
+                 padding: 5px 0;
+            }
+
+            .calendario-grid {
+                gap: 2px;
+            }
+
+            .dia {
+                border: 1px solid #ccc !important;
+                background-color: #fff !important;
+                padding: 5px;
+                aspect-ratio: auto; /* Remove aspect ratio for print */
+                min-height: 60px; /* Give some height */
+                justify-content: flex-start; /* Align content top */
+                align-items: flex-start; /* Align content left */
+            }
+            .dia-numero {
+                color: #000 !important;
+                font-size: 0.9em;
+                margin-bottom: 2px;
+            }
+            .dia.outro-mes .dia-numero {
+                 color: #aaa !important;
+                 opacity: 1;
+            }
+            .dia.hoje {
+                 background-color: #eee !important; /* Light gray for today */
+                 border: 1px solid #999 !important;
+            }
+             .dia.hoje .dia-numero {
+                 color: #000 !important;
+                 font-weight: bold;
+             }
+
+            .marcador-evento {
+                 /* Optionally show markers differently or hide */
+                 height: 5px;
+                 width: 5px;
+                 background-color: #555 !important;
+                 display: block; /* Make it block to list vertically */
+                 margin-top: 2px;
+                 animation: none; /* Disable animation */
+            }
+             /* Basic event listing within the day cell */
+             .dia .evento-print {
+                 display: block;
+                 font-size: 0.7em;
+                 color: #333;
+                 margin-top: 2px;
+                 white-space: nowrap;
+                 overflow: hidden;
+                 text-overflow: ellipsis;
+             }
+        }
+    </style>
+</head>
+<body>
+    <button id="tema-btn">Alternar Tema</button>
+    <button id="exportar-pdf">Exportar para PDF</button>
+    <h1>Sistema de Planner</h1>
+
+    <div class="relogio-container">
+        <div id="relogio"></div>
+        <div id="data"></div>
+    </div>
+
+    <div class="container">
+        <div class="calendario">
+            <h2>Calendário / Planner</h2>
+            <div class="calendario-header">
+                <div class="mes-navegacao">
+                    <button id="mes-anterior" aria-label="Mês anterior">◀</button>
+                    <select id="mes-select" aria-label="Selecionar Mês">
+                        <option value="0">Janeiro</option>
+                        <option value="1">Fevereiro</option>
+                        <option value="2">Março</option>
+                        <option value="3">Abril</option>
+                        <option value="4">Maio</option>
+                        <option value="5">Junho</option>
+                        <option value="6">Julho</option>
+                        <option value="7">Agosto</option>
+                        <option value="8">Setembro</option>
+                        <option value="9">Outubro</option>
+                        <option value="10">Novembro</option>
+                        <option value="11">Dezembro</option>
+                    </select>
+                    <select id="ano-select" aria-label="Selecionar Ano"></select>
+                    <button id="mes-proximo" aria-label="Próximo mês">▶</button>
+                </div>
+            </div>
+
+            <div class="dias-semana">
+                <span>Dom</span>
+                <span>Seg</span>
+                <span>Ter</span>
+                <span>Qua</span>
+                <span>Qui</span>
+                <span>Sex</span>
+                <span>Sáb</span>
+            </div>
+
+            <div class="calendario-grid" id="calendario-dias">
+                </div>
+        </div>
+    </div>
+
+    <div class="modal" id="evento-modal">
+        <div class="modal-conteudo">
+            <span class="fechar-modal" id="fechar-modal" aria-label="Fechar modal">&times;</span>
+            <h3 class="modal-titulo" id="modal-titulo">Adicionar Evento</h3>
+            <form id="evento-form">
+                <input type="hidden" id="evento-id">
+                <input type="hidden" id="evento-data">
+
+                <div class="form-grupo">
+                    <label for="evento-titulo">Título:</label>
+                    <input type="text" id="evento-titulo" required>
+                </div>
+
+                <div class="form-grupo">
+                    <label for="evento-horario">Horário:</label>
+                    <input type="time" id="evento-horario">
+                </div>
+
+                <div class="form-grupo">
+                    <label for="evento-descricao">Descrição:</label>
+                    <textarea id="evento-descricao" rows="4"></textarea>
+                </div>
+
+                <div class="form-grupo">
+                    <label for="evento-categoria">Categoria:</label>
+                    <select id="evento-categoria">
+                        <option value="trabalho">Trabalho</option>
+                        <option value="pessoal">Pessoal</option>
+                        <option value="importante">Importante</option>
+                        <option value="outro">Outro</option>
+                    </select>
+                </div>
+
+                <div class="form-botoes">
+                    <button type="button" class="btn btn-cancelar" id="btn-cancelar">Cancelar</button>
+                    <button type="button" class="btn btn-excluir" id="btn-excluir" style="display: none;">Excluir</button>
+                    <button type="submit" class="btn btn-salvar">Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="modal" id="eventos-dia-modal">
+        <div class="modal-conteudo">
+            <span class="fechar-modal" id="fechar-eventos-dia" aria-label="Fechar modal">&times;</span>
+            <h3 class="modal-titulo" id="eventos-dia-titulo">Eventos para DD/MM/YYYY</h3>
+
+            <div class="lista-eventos" id="lista-eventos">
+                </div>
+
+            <div class="form-botoes">
+                <button type="button" class="btn btn-cancelar" id="fechar-lista-eventos">Fechar</button>
+                <button type="button" class="btn btn-salvar" id="adicionar-novo-evento">Adicionar Evento</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- Configurações Globais ---
+        const hoje = moment(); // Data atual usando Moment.js
+        let mesAtual = hoje.month(); // Mês atual (0-11)
+        let anoAtual = hoje.year(); // Ano atual
+        // Carrega eventos do localStorage ou inicializa um objeto vazio
+        let eventos = JSON.parse(localStorage.getItem('eventosPlannerModerno')) || {};
+
+        // --- Elementos DOM ---
+        const relogioEl = document.getElementById("relogio");
+        const dataEl = document.getElementById("data");
+        const temaBtn = document.getElementById("tema-btn");
+        const exportarPdfBtn = document.getElementById("exportar-pdf");
+        const calendarioDiasEl = document.getElementById('calendario-dias');
+        const mesSelectEl = document.getElementById('mes-select');
+        const anoSelectEl = document.getElementById('ano-select');
+        const mesAnteriorBtn = document.getElementById('mes-anterior');
+        const mesProximoBtn = document.getElementById('mes-proximo');
+        const eventoModalEl = document.getElementById('evento-modal');
+        const eventosDiaModalEl = document.getElementById('eventos-dia-modal');
+        const fecharModalBtn = document.getElementById('fechar-modal');
+        const fecharEventosDiaBtn = document.getElementById('fechar-eventos-dia');
+        const fecharListaEventosBtn = document.getElementById('fechar-lista-eventos');
+        const eventoForm = document.getElementById('evento-form');
+        const eventoIdInput = document.getElementById('evento-id');
+        const eventoDataInput = document.getElementById('evento-data');
+        const eventoTituloInput = document.getElementById('evento-titulo');
+        const eventoHorarioInput = document.getElementById('evento-horario');
+        const eventoDescricaoInput = document.getElementById('evento-descricao');
+        const eventoCategoriaSelect = document.getElementById('evento-categoria');
+        const btnCancelar = document.getElementById('btn-cancelar');
+        const btnExcluir = document.getElementById('btn-excluir');
+        const modalTituloEl = document.getElementById('modal-titulo');
+        const eventosDiaTituloEl = document.getElementById('eventos-dia-titulo');
+        const listaEventosEl = document.getElementById('lista-eventos');
+        const adicionarNovoEventoBtn = document.getElementById('adicionar-novo-evento'); // Renomeado para evitar conflito
+
+        // --- Funções ---
+
+        /**
+         * Atualiza o relógio e a data exibidos na página.
+         */
+        function atualizarRelogio() {
+            const agora = moment(); // Pega o momento atual
+            // Define o locale para pt-br ANTES de formatar
+            agora.locale('pt-br');
+            const horaFormatada = agora.format('HH:mm:ss');
+            // Formato de data localizado para Português (Brasil)
+            // 'dddd' - dia da semana por extenso (segunda-feira)
+            // 'D' - dia do mês (1-31)
+            // 'MMMM' - mês por extenso (janeiro)
+            // 'YYYY' - ano com 4 dígitos
+            const dataFormatada = agora.format('dddd, D [de] MMMM [de] YYYY');
+
+            if (relogioEl) relogioEl.textContent = horaFormatada;
+            // Capitaliza a primeira letra do dia da semana
+            if (dataEl) dataEl.textContent = dataFormatada.charAt(0).toUpperCase() + dataFormatada.slice(1);
+        }
+
+        /**
+         * Alterna entre o tema claro e escuro.
+         */
+        function alternarTema() {
+            document.body.classList.toggle("light-mode");
+            // Salva a preferência de tema no localStorage (opcional)
+            if (document.body.classList.contains('light-mode')) {
+                localStorage.setItem('temaPlannerModerno', 'light');
+            } else {
+                localStorage.setItem('temaPlannerModerno', 'dark');
+            }
+        }
+
+        /**
+         * Carrega a preferência de tema do localStorage (opcional).
+         */
+        function carregarTema() {
+            const temaSalvo = localStorage.getItem('temaPlannerModerno');
+            if (temaSalvo === 'light') {
+                document.body.classList.add('light-mode');
+            }
+        }
+
+        /**
+         * Inicializa o seletor de ano com um intervalo de anos.
+         */
+        function inicializarSeletorAno() {
+            if (!anoSelectEl) return;
+            const anoInicial = anoAtual - 10; // 10 anos no passado
+            const anoFinal = anoAtual + 10; // 10 anos no futuro
+            anoSelectEl.innerHTML = ''; // Limpa opções existentes
+
+            for (let ano = anoInicial; ano <= anoFinal; ano++) {
+                const option = document.createElement('option');
+                option.value = ano;
+                option.textContent = ano;
+                anoSelectEl.appendChild(option);
+            }
+            anoSelectEl.value = anoAtual; // Define o ano atual como selecionado
+        }
+
+        /**
+         * Gera e exibe o calendário para o mês e ano especificados.
+         * @param {number} mes - O mês (0-11).
+         * @param {number} ano - O ano.
+         */
+        function gerarCalendario(mes, ano) {
+            if (!calendarioDiasEl || !mesSelectEl || !anoSelectEl) return;
+            calendarioDiasEl.innerHTML = ''; // Limpa o grid
+
+            // Define os valores nos seletores
+            mesSelectEl.value = mes;
+            // Garante que o ano selecionado existe no dropdown
+            if (!Array.from(anoSelectEl.options).some(opt => opt.value == ano)) {
+                const option = document.createElement('option');
+                option.value = ano;
+                option.textContent = ano;
+                // Insere na ordem correta
+                if (ano < parseInt(anoSelectEl.options[0].value)) {
+                    anoSelectEl.insertBefore(option, anoSelectEl.options[0]);
+                } else {
+                    anoSelectEl.appendChild(option);
+                }
+            }
+            anoSelectEl.value = ano;
+
+
+            const primeiroDiaDoMes = moment([ano, mes, 1]);
+            // Dia da semana do primeiro dia (0 = Domingo, 6 = Sábado)
+            const primeiroDiaSemana = primeiroDiaDoMes.day();
+
+            // Calcula o início do calendário (pode ser no mês anterior)
+            let dataAtual = moment(primeiroDiaDoMes).subtract(primeiroDiaSemana, 'days');
+
+            const diasTotais = 42; // Sempre exibe 6 semanas (6 * 7)
+
+            for (let i = 0; i < diasTotais; i++) {
+                const diaEl = document.createElement('div');
+                const diaNumeroEl = document.createElement('div');
+                const diaData = dataAtual.format('YYYY-MM-DD'); // Formato AAAA-MM-DD para IDs e dados
+
+                diaEl.className = 'dia';
+                diaNumeroEl.className = 'dia-numero';
+                diaNumeroEl.textContent = dataAtual.date(); // Dia do mês (1-31)
+                diaEl.appendChild(diaNumeroEl);
+                diaEl.setAttribute('data-data', diaData); // Armazena a data no elemento
+
+                // Verifica se o dia pertence ao mês atual
+                if (dataAtual.month() !== mes) {
+                    diaEl.classList.add('outro-mes');
+                }
+
+                // Verifica se é o dia atual
+                if (dataAtual.isSame(hoje, 'day')) {
+                    diaEl.classList.add('hoje');
+                }
+
+                // Verifica se há eventos para este dia e adiciona marcador
+                if (eventos[diaData] && eventos[diaData].length > 0) {
+                    const marcador = document.createElement('div');
+                    marcador.className = 'marcador-evento';
+                    diaEl.appendChild(marcador);
+
+                     // Adiciona eventos ao dia para impressão (limitado)
+                     if (typeof eventos[diaData] !== 'undefined') {
+                         eventos[diaData].slice(0, 2).forEach(evento => { // Mostra até 2 eventos no print
+                             const eventoPrintEl = document.createElement('span');
+                             eventoPrintEl.className = 'evento-print';
+                             eventoPrintEl.textContent = evento.titulo;
+                             diaEl.appendChild(eventoPrintEl);
+                         });
+                     }
+                }
+
+                // Adiciona evento de clique para abrir a lista de eventos do dia
+                diaEl.addEventListener('click', () => mostrarEventosDia(diaData));
+
+                calendarioDiasEl.appendChild(diaEl);
+                dataAtual.add(1, 'day'); // Avança para o próximo dia
+            }
+        }
+
+        /**
+         * Navega para o mês anterior.
+         */
+        function mesAnterior() {
+            mesAtual--;
+            if (mesAtual < 0) {
+                mesAtual = 11; // Volta para Dezembro
+                anoAtual--; // Decrementa o ano
+            }
+            gerarCalendario(mesAtual, anoAtual);
+        }
+
+        /**
+         * Navega para o próximo mês.
+         */
+        function mesProximo() {
+            mesAtual++;
+            if (mesAtual > 11) {
+                mesAtual = 0; // Avança para Janeiro
+                anoAtual++; // Incrementa o ano
+            }
+            gerarCalendario(mesAtual, anoAtual);
+        }
+
+        /**
+         * Atualiza o calendário quando o mês é alterado no select.
+         */
+        function mudarMesSelect() {
+            mesAtual = parseInt(mesSelectEl.value);
+            gerarCalendario(mesAtual, anoAtual);
+        }
+
+        /**
+         * Atualiza o calendário quando o ano é alterado no select.
+         */
+        function mudarAnoSelect() {
+            anoAtual = parseInt(anoSelectEl.value);
+            gerarCalendario(mesAtual, anoAtual);
+        }
+
+        /**
+         * Formata uma data ISO (AAAA-MM-DD) para DD/MM/YYYY.
+         * @param {string} dataISO - A data em formato AAAA-MM-DD.
+         * @returns {string} A data formatada.
+         */
+        function formatarData(dataISO) {
+            // Usa o locale 'pt-br' para formatar
+            return moment(dataISO).locale('pt-br').format('DD/MM/YYYY');
+        }
+
+        /**
+         * Mostra o modal com a lista de eventos para um dia específico.
+         * @param {string} data - A data no formato AAAA-MM-DD.
+         */
+        function mostrarEventosDia(data) {
+            if (!eventosDiaModalEl || !eventosDiaTituloEl || !listaEventosEl || !adicionarNovoEventoBtn) return;
+
+            const dataFormatada = formatarData(data); // Usa a função formatarData que já considera pt-br
+            eventosDiaTituloEl.textContent = `Eventos para ${dataFormatada}`;
+            listaEventosEl.innerHTML = ''; // Limpa a lista
+
+            // Preenche a lista com os eventos do dia
+            if (eventos[data] && eventos[data].length > 0) {
+                // Ordena eventos pelo horário (cria cópia antes de ordenar)
+                const eventosOrdenados = [...eventos[data]].sort((a, b) => {
+                    if (a.horario && b.horario) {
+                        return a.horario.localeCompare(b.horario);
+                    } else if (a.horario) {
+                        return -1; // Eventos com horário vêm primeiro
+                    } else if (b.horario) {
+                        return 1; // Eventos com horário vêm primeiro
+                    }
+                    return 0; // Mantém a ordem original se ambos não tiverem horário
+                });
+
+
+                eventosOrdenados.forEach((evento) => { // Itera sobre a cópia ordenada
+                    const eventoItem = document.createElement('div');
+                    eventoItem.className = 'evento-item';
+                    eventoItem.innerHTML = `
+                        <div class="evento-titulo">${evento.titulo || 'Sem título'}</div>
+                        ${evento.horario ? `<div class="evento-horario">${evento.horario}</div>` : ''}
+                        ${evento.descricao ? `<div style="font-size: 0.85em; color: #cbd5e0; margin-top: 5px;">${evento.descricao}</div>` : ''}
+                        <div style="font-size: 0.8em; color: #a0aec0; margin-top: 5px; text-transform: capitalize;">Categoria: ${evento.categoria || 'Outro'}</div>
+                    `;
+                    // Encontra o índice no array original para garantir a edição/exclusão correta
+                    const originalIndex = eventos[data].findIndex(e => e.titulo === evento.titulo && e.horario === evento.horario && e.descricao === evento.descricao);
+                    eventoItem.addEventListener('click', () => {
+                        fecharModalEventosDia();
+                        // Passa o índice original
+                        mostrarModalEditarEvento(data, originalIndex);
+                    });
+                    listaEventosEl.appendChild(eventoItem);
+                });
+            } else {
+                const semEventos = document.createElement('p');
+                semEventos.textContent = 'Nenhum evento agendado para este dia.';
+                semEventos.style.textAlign = 'center';
+                semEventos.style.padding = '20px';
+                listaEventosEl.appendChild(semEventos);
+            }
+
+            // Configura o botão "Adicionar Evento" para usar a data atual
+            adicionarNovoEventoBtn.onclick = () => {
+                fecharModalEventosDia();
+                mostrarModalAdicionarEvento(data);
+            };
+
+            eventosDiaModalEl.style.display = 'flex'; // Mostra o modal
+        }
+
+        /**
+         * Configura e mostra o modal para adicionar um novo evento.
+         * @param {string} data - A data no formato AAAA-MM-DD.
+         */
+        function mostrarModalAdicionarEvento(data) {
+            if (!eventoModalEl || !modalTituloEl || !eventoForm || !btnExcluir) return;
+
+            modalTituloEl.textContent = 'Adicionar Novo Evento';
+            eventoForm.reset(); // Limpa o formulário
+            eventoIdInput.value = ''; // Garante que não há ID (modo de adição)
+            eventoDataInput.value = data; // Define a data do evento
+            btnExcluir.style.display = 'none'; // Esconde o botão de excluir
+            eventoModalEl.style.display = 'flex'; // Mostra o modal
+            eventoTituloInput.focus(); // Foca no campo de título
+        }
+
+        /**
+         * Configura e mostra o modal para editar um evento existente.
+         * @param {string} data - A data do evento (AAAA-MM-DD).
+         * @param {number} indice - O índice do evento no array `eventos[data]`.
+         */
+        function mostrarModalEditarEvento(data, indice) {
+            // Verifica se o índice é válido antes de acessar o evento
+            if (!eventoModalEl || !modalTituloEl || !eventoForm || !btnExcluir || !eventos[data] || typeof eventos[data][indice] === 'undefined') {
+                 console.error("Tentativa de editar evento com índice inválido:", indice, "para data:", data);
+                 alert("Erro ao tentar carregar o evento para edição.");
+                 return;
+            }
+
+            const evento = eventos[data][indice];
+
+            modalTituloEl.textContent = 'Editar Evento';
+            eventoForm.reset(); // Limpa o formulário antes de preencher
+            eventoIdInput.value = indice; // Define o ID (índice) do evento
+            eventoDataInput.value = data; // Define a data
+            eventoTituloInput.value = evento.titulo || '';
+            eventoHorarioInput.value = evento.horario || '';
+            eventoDescricaoInput.value = evento.descricao || '';
+            eventoCategoriaSelect.value = evento.categoria || 'trabalho'; // Define a categoria ou padrão
+
+            btnExcluir.style.display = 'inline-block'; // Mostra o botão de excluir
+            eventoModalEl.style.display = 'flex'; // Mostra o modal
+            eventoTituloInput.focus(); // Foca no campo de título
+        }
+
+        /**
+         * Fecha o modal de adicionar/editar evento.
+         */
+        function fecharModalEvento() {
+            if (eventoModalEl) eventoModalEl.style.display = 'none';
+        }
+
+        /**
+         * Fecha o modal de lista de eventos do dia.
+         */
+        function fecharModalEventosDia() {
+            if (eventosDiaModalEl) eventosDiaModalEl.style.display = 'none';
+        }
+
+        /**
+         * Salva um evento (novo ou editado).
+         * @param {Event} e - O evento de submit do formulário.
+         */
+        function salvarEvento(e) {
+            e.preventDefault(); // Previne o envio padrão do formulário
+
+            const eventoId = eventoIdInput.value;
+            const data = eventoDataInput.value;
+            const titulo = eventoTituloInput.value.trim(); // Remove espaços extras
+            const horario = eventoHorarioInput.value;
+            const descricao = eventoDescricaoInput.value.trim();
+            const categoria = eventoCategoriaSelect.value;
+
+            if (!titulo) {
+                alert("O título do evento é obrigatório.");
+                return;
+            }
+
+            const novoEvento = { titulo, horario, descricao, categoria };
+
+            // Inicializa o array de eventos para a data se não existir
+            if (!eventos[data]) {
+                eventos[data] = [];
+            }
+
+            // Adiciona ou atualiza o evento
+            if (eventoId === '') { // Adicionando novo evento
+                eventos[data].push(novoEvento);
+            } else { // Editando evento existente
+                const index = parseInt(eventoId);
+                // Verifica se o índice é válido
+                if (eventos[data] && typeof eventos[data][index] !== 'undefined') {
+                    eventos[data][index] = novoEvento;
+                } else {
+                    console.error("Erro ao editar: Índice inválido", index, data);
+                    alert("Ocorreu um erro ao tentar salvar as alterações.");
+                    return; // Impede a execução se o índice for inválido
+                }
+            }
+
+            salvarEventosLocalStorage(); // Salva no localStorage
+            fecharModalEvento(); // Fecha o modal
+            gerarCalendario(mesAtual, anoAtual); // Atualiza a exibição do calendário
+        }
+
+        /**
+         * Exclui um evento.
+         */
+        function excluirEvento() {
+            const eventoId = parseInt(eventoIdInput.value);
+            const data = eventoDataInput.value;
+
+            // Verifica se o índice é válido
+            if (isNaN(eventoId) || !eventos[data] || typeof eventos[data][eventoId] === 'undefined') {
+                 console.error("Erro ao tentar excluir evento: ID ou data inválida.");
+                 alert("Não foi possível encontrar o evento para excluir.");
+                 return;
+            }
+
+            // Confirmação antes de excluir
+            if (confirm(`Tem certeza que deseja excluir o evento "${eventos[data][eventoId].titulo}"?`)) {
+                eventos[data].splice(eventoId, 1); // Remove o evento do array
+
+                // Se não houver mais eventos para esta data, remove a chave do objeto
+                if (eventos[data].length === 0) {
+                    delete eventos[data];
+                }
+
+                salvarEventosLocalStorage(); // Salva no localStorage
+                fecharModalEvento(); // Fecha o modal
+                gerarCalendario(mesAtual, anoAtual); // Atualiza o calendário
+            }
+        }
+
+        /**
+         * Salva o objeto de eventos no localStorage.
+         */
+        function salvarEventosLocalStorage() {
+            localStorage.setItem('eventosPlannerModerno', JSON.stringify(eventos));
+        }
+
+        /**
+         * Exporta os eventos do calendário para um arquivo PDF.
+         */
+        function exportarParaPDF() {
+             // Verifica se a biblioteca jsPDF base está carregada
+            if (typeof window.jspdf === 'undefined' || typeof window.jspdf.jsPDF === 'undefined') {
+                alert('Erro: Biblioteca jsPDF não carregada.');
+                console.error('jsPDF library not found. Make sure the script is loaded.');
+                return;
+            }
+
+            const { jsPDF } = window.jspdf; // Pega a classe jsPDF
+
+            // Verifica se há eventos para exportar
+            if (Object.keys(eventos).length === 0) {
+                alert('Não há eventos para exportar!');
+                return;
+            }
+
+            try {
+                const doc = new jsPDF(); // Cria um novo documento PDF
+
+                 // Verifica se o método autoTable existe na instância do doc ANTES de usá-lo
+                 if (typeof doc.autoTable !== 'function') {
+                    alert('Erro: Plugin jsPDF AutoTable não está funcionando corretamente.');
+                    console.error('jsPDF autoTable function not found on doc instance. Make sure the plugin script is loaded AFTER the main jsPDF script.');
+                    return;
+                 }
+
+
+                // Adiciona título
+                doc.setFontSize(18);
+                doc.text('Relatório de Eventos do Planner', 105, 20, { align: 'center' });
+
+                // Adiciona data de geração
+                const dataGeracao = moment().locale('pt-br').format('DD/MM/YYYY HH:mm'); // Formata data de geração em pt-br
+                doc.setFontSize(10);
+                doc.text(`Gerado em: ${dataGeracao}`, 105, 28, { align: 'center' });
+
+                // Prepara os dados para a tabela
+                const dadosTabela = [];
+                // Ordena as datas antes de processar
+                const datasOrdenadas = Object.keys(eventos).sort((a, b) => moment(a).diff(moment(b)));
+
+                datasOrdenadas.forEach(data => {
+                    if (eventos[data] && eventos[data].length > 0) {
+                         // Ordena eventos dentro do dia pelo horário (cria cópia antes de ordenar)
+                         const eventosDoDiaOrdenados = [...eventos[data]].sort((a, b) => {
+                             if (a.horario && b.horario) return a.horario.localeCompare(b.horario);
+                             if (a.horario) return -1;
+                             if (b.horario) return 1;
+                             return 0;
+                         });
+
+                        eventosDoDiaOrdenados.forEach(evento => {
+                            dadosTabela.push({
+                                data: formatarData(data), // Usa a função que já formata em pt-br
+                                titulo: evento.titulo || '-',
+                                horario: evento.horario || '-',
+                                descricao: evento.descricao || '-',
+                                categoria: evento.categoria || '-'
+                            });
+                        });
+                    }
+                });
+
+                // Define as colunas da tabela
+                const colunas = [
+                    { header: 'Data', dataKey: 'data' },
+                    { header: 'Título', dataKey: 'titulo' },
+                    { header: 'Horário', dataKey: 'horario' },
+                    { header: 'Descrição', dataKey: 'descricao' },
+                    { header: 'Categoria', dataKey: 'categoria' }
+                ];
+
+                // Adiciona a tabela ao documento usando autoTable
+                doc.autoTable({
+                    head: [colunas.map(col => col.header)], // Cabeçalhos
+                    body: dadosTabela.map(row => colunas.map(col => row[col.dataKey])), // Dados
+                    startY: 35, // Posição inicial da tabela
+                    theme: 'grid', // Estilo da tabela (grid, striped, plain)
+                    headStyles: {
+                        fillColor: [74, 85, 104], // Cor de fundo do cabeçalho (cinza escuro)
+                        textColor: [247, 250, 252], // Cor do texto do cabeçalho (branco)
+                        fontStyle: 'bold'
+                    },
+                    styles: {
+                        cellPadding: 3,
+                        fontSize: 10,
+                        overflow: 'linebreak' // Quebra linha se o texto for muito longo
+                    },
+                    columnStyles: {
+                        // Ajusta a largura das colunas se necessário
+                        0: { cellWidth: 25 }, // Data
+                        1: { cellWidth: 40 }, // Título
+                        2: { cellWidth: 20 }, // Horário
+                        3: { cellWidth: 'auto' }, // Descrição (automático)
+                        4: { cellWidth: 30 }  // Categoria
+                    }
+                });
+
+                // Salva o PDF
+                const nomeArquivo = `planner-eventos-${moment().format('YYYYMMDD')}.pdf`;
+                doc.save(nomeArquivo);
+
+            } catch (error) {
+                console.error("Erro ao gerar PDF:", error);
+                alert("Ocorreu um erro ao gerar o PDF. Verifique o console para mais detalhes.");
+            }
+        }
+
+
+        // --- Event Listeners ---
+        if (temaBtn) temaBtn.addEventListener('click', alternarTema);
+        if (exportarPdfBtn) exportarPdfBtn.addEventListener('click', exportarParaPDF);
+        if (mesAnteriorBtn) mesAnteriorBtn.addEventListener('click', mesAnterior);
+        if (mesProximoBtn) mesProximoBtn.addEventListener('click', mesProximo);
+        if (mesSelectEl) mesSelectEl.addEventListener('change', mudarMesSelect);
+        if (anoSelectEl) anoSelectEl.addEventListener('change', mudarAnoSelect);
+        if (eventoForm) eventoForm.addEventListener('submit', salvarEvento);
+        if (btnExcluir) btnExcluir.addEventListener('click', excluirEvento);
+        if (btnCancelar) btnCancelar.addEventListener('click', fecharModalEvento);
+        if (fecharModalBtn) fecharModalBtn.addEventListener('click', fecharModalEvento);
+        if (fecharEventosDiaBtn) fecharEventosDiaBtn.addEventListener('click', fecharModalEventosDia);
+        if (fecharListaEventosBtn) fecharListaEventosBtn.addEventListener('click', fecharModalEventosDia);
+
+        // Fechar modal clicando fora do conteúdo (opcional)
+        [eventoModalEl, eventosDiaModalEl].forEach(modal => {
+            if (modal) {
+                modal.addEventListener('click', (e) => {
+                    if (e.target === modal) { // Verifica se o clique foi no fundo do modal
+                        if (modal === eventoModalEl) fecharModalEvento();
+                        if (modal === eventosDiaModalEl) fecharModalEventosDia();
+                    }
+                });
+            }
+        });
+
+
+        // --- Inicialização ---
+        document.addEventListener('DOMContentLoaded', () => {
+            // Define o locale globalmente para pt-br AQUI
+            moment.locale('pt-br');
+            carregarTema(); // Carrega o tema salvo
+            atualizarRelogio(); // Atualiza o relógio imediatamente (já usará pt-br)
+            setInterval(atualizarRelogio, 1000); // Define intervalo para atualizar o relógio
+            inicializarSeletorAno(); // Preenche o seletor de ano
+            gerarCalendario(mesAtual, anoAtual); // Gera o calendário inicial
+        });
+
+    </script>
+</body>
+</html>
